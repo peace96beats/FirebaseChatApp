@@ -13,18 +13,22 @@ firebase.initializeApp(config);
 const db = firebase.firestore();
 db.settings({
   timestampsInSnapshots: true
-})
+});
 const collection = db.collection('messages');
+
+const auth = firebase.auth();
 
 const message = document.getElementById('message');
 const form = document.querySelector('form');
 const messages = document.getElementById('messages');
 
-collection.orderBy('created').get().then(snapshot => {
-  snapshot.forEach(doc => {
-    const li = document.createElement('li');
-    li.textContent = doc.data().message;
-    messages.appendChild(li);
+collection.orderBy('created').onSnapshot(snapshot => {
+  snapshot.docChanges().forEach(change => {
+    if (change.type === 'added') {
+      const li = document.createElement('li');
+      li.textContent = change.doc.data().message;
+      messages.appendChild(li);
+    }
   });
 });
 
@@ -33,13 +37,9 @@ form.addEventListener('submit', e => {
   e.preventDefault();
 
   const val = message.value.trim();
-  if (val === ""){
+  if (val === "") {
     return;
   }
-
-  const li = document.createElement('li');
-  li.textContent = val;
-  messages.appendChild(li);
 
   message.value = '';
   message.focus();
@@ -48,7 +48,7 @@ form.addEventListener('submit', e => {
     message: val,
     created: firebase.firestore.FieldValue.serverTimestamp()
   })
-  .then(doc =>{
+  .then(doc => {
     console.log(`${doc.id} added!`);
   })
   .catch(error => {
